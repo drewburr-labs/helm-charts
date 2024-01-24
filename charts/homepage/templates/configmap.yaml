@@ -1,0 +1,12 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: homepage-config
+  labels:
+    {{- include "homepage.labels" . | nindent 4 }}
+data:
+  {{- range $filename, $content := .Values.config }}
+  {{ $filename }}.yaml: |
+    {{- $content | toYaml | nindent 4 }}
+  {{- end }}

@@ -46,6 +46,13 @@ spec:
               port: http
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: homepage-config
+              mountPath: /app/config
+            {{- range $name, $config := .Values.volumes }}
+            - name: {{ $name }}
+              mountPath: {{ $config.mountPath }}
+            {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -58,3 +65,13 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      volumes:
+        - name: homepage-config
+          configMap:
+            name: homepage-config
+            optional: true
+        {{- range $name, $config := .Values.volumes }}
+        - name: {{ $name }}
+          {{ $config.type }}:
+            {{ $config.volumeOptions | toYaml | nindent 12 }}
+        {{- end }}
