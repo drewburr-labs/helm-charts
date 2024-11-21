@@ -1,0 +1,41 @@
+## Reference: https://github.com/helm/chart-testing-action
+name: Helm Lint and Test
+on:
+  schedule:
+    - cron: "0 23 * * 5" # Every Friday night
+
+permissions:
+  contents: write
+
+jobs:
+  check-updates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        path: helm-charts
+
+      - name: Clone CrunchyData/postgres-operator-examples
+        uses: GuillaumeFalourd/clone-github-repo-action@v2.3
+        owner: CrunchyData
+        repository: postgres-operator-examples
+
+      - name: Access cloned repository content
+        run: |
+          cp -r postgres-operator-examples/helm/postgres/* helm-charts/postgrescluster/
+
+      - name: Check if there are changes
+        id: changes
+        uses: UnicornGlobal/has-changes-action@v1.0.11
+
+      - name: Commit and open pull request
+        if: steps.changes.outputs.changed == 1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd helm-charts
+          export CHART_VERSION=$(cat charts/postgrescluster/Chart.yaml | grep ^version | cut -d ' ' -f 2)
+          git checkout "postgrescluster-$CHART_VERSION"
+          git add .
+          git commit -m "Upgrade postgrescluster to $CHART_VERSION"
+          git push
+          gh pr create --fill
