@@ -6,13 +6,11 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write # To commit changes
+    pull-requests: write # To open PRs
 
 jobs:
   check-updates:
-    permissions:
-      contents: write # To commit changes
-      pull-requests: write # To open PRs
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
