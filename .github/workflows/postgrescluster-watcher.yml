@@ -7,7 +7,7 @@ on:
 
 permissions:
   contents: write # To commit changes
-    pull-requests: write # To open PRs
+  pull-requests: write # To open PRs
 
 jobs:
   check-updates:
