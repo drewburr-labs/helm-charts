@@ -21,18 +21,17 @@ jobs:
           repository: postgres-operator-examples
 
       - name: Copy postgrescluster chart
+        id: copy
         run: |
           cp -r postgres-operator-examples/helm/postgres/* ./charts/postgrescluster/
           rm -rf postgres-operator-examples
-          # Required for next step
-          git config --global --add safe.directory /github/workspace
-
-      - name: Check if there are changes
-        id: changes
-        uses: UnicornGlobal/has-changes-action@v1.0.11
+          # Check if there are chanbges
+          git update-index -q --ignore-submodules --refresh
+          git diff-files --quiet --ignore-submodules
+          echo "changed=$?" >> "$GITHUB_OUTPUT"
 
       - name: Commit and open pull request
-        if: steps.changes.outputs.changed == 1
+        if: steps.copy.outputs.changed == 1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
