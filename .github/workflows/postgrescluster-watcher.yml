@@ -37,7 +37,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           export CHART_VERSION=$(cat charts/postgrescluster/Chart.yaml | grep ^version | cut -d ' ' -f 2)
-          git checkout "postgrescluster-$CHART_VERSION"
+          git checkout -b "postgrescluster-$CHART_VERSION"
           git add .
           git commit -m "Upgrade postgrescluster to $CHART_VERSION"
           git push
