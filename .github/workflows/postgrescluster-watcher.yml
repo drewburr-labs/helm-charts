@@ -31,7 +31,7 @@ jobs:
           echo "REPO_CHANGED=$?" >> "$GITHUB_ENV"
 
       - name: Commit and open pull request
-        if: $REPO_CHANGED == 1
+        if: ${{ env.REPO_CHANGED == 1 }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
