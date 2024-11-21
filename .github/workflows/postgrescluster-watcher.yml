@@ -25,11 +25,12 @@ jobs:
         run: |
           cp -r postgres-operator-examples/helm/postgres/* ./charts/postgrescluster/
           rm -rf postgres-operator-examples
-          # Check if there are chanbges
+          # Check if there are changes
           git update-index -q --ignore-submodules --refresh
           git diff-files --quiet --ignore-submodules
           REPO_CHANGED=$?
-          # echo "REPO_CHANGED=$REPO_CHANGED" >> "$GITHUB_ENV"
+          echo "REPO_CHANGED: $REPO_CHANGED"
+          echo "REPO_CHANGED=$REPO_CHANGED" >> "$GITHUB_ENV"
 
       - name: Commit and open pull request
         if: ${{ env.REPO_CHANGED == 1 }}
