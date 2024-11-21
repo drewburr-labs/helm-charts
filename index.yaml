@@ -1,2 +1,14 @@
 apiVersion: v1
-entries: {}
+entries:
+  postgrescluster:
+  - apiVersion: v2
+    appVersion: 5.6.0
+    created: "2024-11-21T05:52:41.847843401Z"
+    description: A Helm chart for Kubernetes
+    digest: a52a483f121461cca3e0a612b377e034f10a97f1511981b7ee5ca4f223772910
+    name: postgrescluster
+    type: application
+    urls:
+    - https://github.com/drewburr-labs/helm-charts/releases/download/postgrescluster-5.6.0/postgrescluster-5.6.0.tgz
+    version: 5.6.0
+generated: "2024-11-21T05:52:41.847851206Z"
