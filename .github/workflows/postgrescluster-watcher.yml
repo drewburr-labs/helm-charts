@@ -6,10 +6,12 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   check-updates:
+    permissions:
+      contents: write  # for pull request process
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
