@@ -13,7 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        path: helm-charts
+        with:
+          path: helm-charts
 
       - name: Clone CrunchyData/postgres-operator-examples
         uses: GuillaumeFalourd/clone-github-repo-action@v2.3
