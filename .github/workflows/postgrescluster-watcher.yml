@@ -20,12 +20,10 @@ jobs:
           owner: CrunchyData
           repository: postgres-operator-examples
 
-      - name: Access cloned repository content
+      - name: Copy postgrescluster chart
         run: |
-          pwd
-          ls -la
-          ls -la helm-charts
-          cp -r postgres-operator-examples/helm/postgres/* helm-charts/postgrescluster/
+          cp -r postgres-operator-examples/helm/postgres/* ./charts/postgrescluster/
+          rm -rf postgres-operator-examples
 
       - name: Check if there are changes
         id: changes
