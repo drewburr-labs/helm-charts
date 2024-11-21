@@ -36,7 +36,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          cd helm-charts
           export CHART_VERSION=$(cat charts/postgrescluster/Chart.yaml | grep ^version | cut -d ' ' -f 2)
           git checkout "postgrescluster-$CHART_VERSION"
           git add .
