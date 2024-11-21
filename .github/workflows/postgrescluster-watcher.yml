@@ -24,6 +24,8 @@ jobs:
         run: |
           cp -r postgres-operator-examples/helm/postgres/* ./charts/postgrescluster/
           rm -rf postgres-operator-examples
+          # Required for next step
+          git config --global --add safe.directory /github/workspace
 
       - name: Check if there are changes
         id: changes
