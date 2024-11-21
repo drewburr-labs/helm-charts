@@ -17,8 +17,9 @@ jobs:
 
       - name: Clone CrunchyData/postgres-operator-examples
         uses: GuillaumeFalourd/clone-github-repo-action@v2.3
-        owner: CrunchyData
-        repository: postgres-operator-examples
+        with:
+          owner: CrunchyData
+          repository: postgres-operator-examples
 
       - name: Access cloned repository content
         run: |
