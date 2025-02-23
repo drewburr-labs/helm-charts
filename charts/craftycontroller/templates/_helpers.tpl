@@ -82,9 +82,9 @@ SFTP sidecar container spec
     {{- toYaml . | nindent 4 }}
     {{- end }}
   ports:
-    - name: {{ .name }}
-      containerPort: {{ .port }}
-      protocol: {{ .protocol }}
+    - name: {{ .service.port.name }}
+      containerPort: {{ .service.port.port }}
+      protocol: {{ .service.port.protocol }}
   {{- with .livenessProbe }}
   resources:
     {{- toYaml .resources | nindent 4 }}
