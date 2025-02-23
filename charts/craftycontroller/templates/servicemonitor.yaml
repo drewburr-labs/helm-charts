@@ -1,0 +1,17 @@
+{{- range .Values.serviceMonitors }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    release: prometheus
+  name: {{ include "craftycontroller.fullname" $ }}-{{ .name }}
+spec:
+  endpoints:
+    {{- toYaml .endpoints | nindent 4 }}
+  namespaceSelector:
+    {{- tpl (toYaml .namespaceSelector) $ | nindent 4 }}
+  selector:
+    matchLabels:
+      metrics: "true"
+{{- end }}

@@ -1,0 +1,25 @@
+{{- range $serviceName, $serviceSpec := .Values.services }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "craftycontroller.fullname" $ }}-{{ $serviceName }}
+  labels:
+    {{- include "craftycontroller.labels" $ | nindent 4 }}
+    {{- with $serviceSpec.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- with $serviceSpec.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ $serviceSpec.type }}
+  ports:
+    {{- toYaml $serviceSpec.ports | nindent 4 }}
+  selector:
+    {{- include "craftycontroller.selectorLabels" $ | nindent 4 }}
+  {{- with $serviceSpec.externalTrafficPolicy }}
+  externalTrafficPolicy: {{ . }}
+  {{- end }}
+{{- end }}

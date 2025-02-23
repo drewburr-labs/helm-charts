@@ -1,0 +1,18 @@
+{{- range $name, $spec := .Values.persistence }}
+{{-  if and ($spec.enabled | default true) ($spec.requests) }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "craftycontroller.labels" $ | nindent 4 }}
+spec:
+  accessModes:
+    {{- toYaml $spec.accessModes | nindent 4 }}
+  resources:
+    requests:
+      storage: {{ $spec.requests }}
+  storageClassName: {{ $spec.storageClassName | default "" }}
+{{- end }}
+{{- end }}

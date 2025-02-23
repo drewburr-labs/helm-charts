@@ -1,0 +1,124 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "craftycontroller.fullname" . }}
+  labels:
+    {{- include "craftycontroller.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicas }}
+  selector:
+    matchLabels:
+      {{- include "craftycontroller.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "craftycontroller.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "craftycontroller.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            {{- range $serviceName, $serviceSpec := .Values.services }}
+            {{- range $portSpec := $serviceSpec.ports }}
+            - name: {{ $portSpec.name }}
+              containerPort: {{ $portSpec.port }}
+              protocol: {{ $portSpec.protocol }}
+            {{- end }}
+            {{- end }}
+          {{- with .Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.startupProbe }}
+          startupProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            {{- range $name, $spec := .Values.persistence }}
+            - name: {{ $name }}
+              mountPath: {{ $spec.mountPath }}
+            {{- end }}
+            {{- range .Values.additionalVolumeMounts }}
+            {{ list . | toYaml | nindent 12 }}
+            {{- end }}
+      initContainers:
+        {{- include "craftycontroller.sftp-sidecar" $ | nindent 6 }}
+        {{- range $initContainer := .Values.initContainers }}
+        - name: {{ $initContainer.name }}
+          securityContext:
+            {{- toYaml $initContainer.securityContext | nindent 12 }}
+          image: "{{ .image.repository }}:{{ .image.tag | default $.Chart.AppVersion }}"
+          imagePullPolicy: {{ $initContainer.image.pullPolicy }}
+          restartPolicy: {{ $initContainer.restartPolicy }}
+          {{- with $initContainer.env }}
+          env:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            {{- range $initContainer.ports }}
+            - name: {{ .name }}
+              containerPort: {{ .port }}
+              protocol: {{ .protocol }}
+            {{- end }}
+          {{- with $initContainer.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $initContainer.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $initContainer.startupProbe }}
+          startupProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml $initContainer.resources | nindent 12 }}
+          volumeMounts:
+            {{- toYaml $initContainer.volumeMounts | nindent 12 }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        {{- range $name, $spec := .Values.persistence }}
+        {{- if $spec.enabled | default true }}
+        - name: {{ $name }}
+          persistentVolumeClaim:
+            claimName: {{ $name }}
+        {{- end }}
+        {{- end }}
+        {{- include "craftycontroller.sftp-volumes" $ | nindent 8 }}
+        {{- range .Values.additionalVolumes }}
+        {{- $volumeSpec := omit . "mountPath" }}
+        {{- list $volumeSpec | toYaml | nindent 8 }}
+        {{- end }}

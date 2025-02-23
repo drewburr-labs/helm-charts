@@ -1,0 +1,163 @@
+# Default values for panel.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicas: 1 # Should always be 1
+
+image:
+  repository: registry.gitlab.com/crafty-controller/crafty-4
+  pullPolicy: Always
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ''
+
+imagePullSecrets: []
+nameOverride: ''
+fullnameOverride: ''
+
+resources: {}
+
+livenessProbe:
+  initialDelaySeconds: 30
+  httpGet:
+    path: /
+    port: https
+    scheme: HTTPS
+readinessProbe:
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  failureThreshold: 18
+  httpGet:
+    path: /
+    port: https
+    scheme: HTTPS
+startupProbe: {}
+
+persistence:
+  crafty-app-config:
+    enabled: true
+    accessModes:
+      - ReadWriteOnce
+    mountPath: /crafty/app/config
+    requests: 1Gi
+    storageClassName:
+  crafty-servers:
+    enabled: true
+    accessModes:
+      - ReadWriteOnce
+    mountPath: /crafty/servers
+    requests: 10Gi
+    storageClassName:
+  crafty-backups:
+    enabled: false
+    accessModes:
+      - ReadWriteOnce
+    mountPath: /crafty/backups
+    requests:
+    storageClassName:
+  crafty-logs:
+    enabled: false
+    accessModes:
+      - ReadWriteOnce
+    mountPath: /crafty/logs
+    requests:
+    storageClassName:
+  crafty-import:
+    enabled: false
+    accessModes:
+      - ReadWriteOnce
+    mountPath: /crafty/import
+    requests:
+    storageClassName:
+
+additionalVolumes: []
+additionalVolumeMounts: []
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ''
+
+podAnnotations: {}
+
+podSecurityContext: {}
+
+# Using the crafty user skips permission checking during container start.
+# Running as root is not reccommended, but will trigger this process to run,
+# and may resolve permission issues.
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000 # Built-in Crafty user
+
+services:
+  https:
+    type: ClusterIP
+    ports:
+      - name: https
+        port: 8443
+        protocol: TCP
+    # ingress:
+    #   className: ""
+    #   annotations: {}
+    #   hosts: []
+    #   tls: []
+  minecraft:
+    type: ClusterIP
+    annotations: {}
+    ports:
+      - name: minecraft
+        port: 25565
+        protocol: TCP
+
+serviceMonitors: []
+  # - name: minecraft-metrics
+  #   endpoints:
+  #     - interval: 30s
+  #       path: /
+  #       port: metrics
+  #       scrapeTimeout: 10s
+  #   selector: {}
+  #   namespaceSelector:
+  #     matchNames:
+  #       - "{{ .Release.Namespace }}"
+
+sftp:
+  enabled: false
+
+  image:
+    repository: atmoz/sftp
+    tag: alpine
+
+  users:
+    secretKeyRef:
+      name: sftp-users
+      key: users
+
+  resources: {}
+  securityContext: {}
+
+  service:
+    type: ClusterIP
+    annotations: {}
+    port:
+      name: sftp
+      port: 22
+      protocol: TCP
+
+  livenessProbe:
+    tcpSocket:
+      port: sftp
+  readinessProbe:
+    tcpSocket:
+      port: sftp
+
+  additionalEnv: []
+
+initContainers: []
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

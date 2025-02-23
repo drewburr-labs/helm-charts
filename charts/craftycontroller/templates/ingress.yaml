@@ -1,0 +1,50 @@
+{{- range $serviceName, $serviceSpec := .Values.services }}
+{{- if ($serviceSpec).ingress }}
+---
+{{- $fullName := include "craftycontroller.fullname" $ -}}
+{{- if $serviceSpec.ingress.className }}
+  {{- if not (hasKey $serviceSpec.ingress.annotations "kubernetes.io/ingress.class") }}
+  {{- $_ := set $serviceSpec.ingress.annotations "kubernetes.io/ingress.class" $serviceSpec.ingress.className}}
+  {{- end }}
+{{- end }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $fullName }}-{{ $serviceName }}
+  labels:
+    {{- include "craftycontroller.labels" $ | nindent 4 }}
+  {{- with $serviceSpec.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  ingressClassName: {{ $serviceSpec.ingress.className }}
+  {{- if $serviceSpec.ingress.tls }}
+  tls:
+    {{- range $tls := $serviceSpec.ingress.tls }}
+    - hosts:
+        {{- range $tls.hosts }}
+        - {{ . | quote }}
+        {{- end }}
+      secretName: {{ $tls.secretName }}
+    {{- end }}
+  {{- end }}
+  rules:
+    {{- range $host := $serviceSpec.ingress.hosts }}
+    - host: {{ $host.host | quote }}
+      http:
+        paths:
+          {{- range $path := $host.paths }}
+          - path: {{ $path.path }}
+            {{- if $path.pathType }}
+            pathType: {{ $path.pathType }}
+            {{- end }}
+            backend:
+              service:
+                name: {{ $fullName }}-{{ $serviceName }}
+                port:
+                  number: {{ default (index $serviceSpec.ports 0).port $path.port }}
+          {{- end }}
+    {{- end }}
+{{- end }}
+{{- end }}
