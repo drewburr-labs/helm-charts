@@ -27,10 +27,11 @@ jobs:
         with:
           version: v3.14.0 # Also update in lint.yaml
 
-      - name: Configure Git
+      - name: Configure Git and distribute license
         run: |
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+          find charts/ -mindepth 1 -maxdepth 1 -exec cp LICENSE.txt {}/LICENSE \;
 
       - name: Run chart-releaser
         uses: helm/chart-releaser-action@v1.6.0
