@@ -144,7 +144,7 @@ sftp:
     annotations: {}
     port:
       name: sftp
-      port: 22
+      containerPort: 22
       protocol: TCP
 
   livenessProbe:
