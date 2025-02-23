@@ -1,5 +1,17 @@
 apiVersion: v1
 entries:
+  craftycontroller:
+  - apiVersion: v2
+    appVersion: latest
+    created: "2025-02-23T18:08:21.243385923Z"
+    description: A Helm chart for Crafty Controller, a web-based GUI for Minecraft
+      Server administration.
+    digest: b646fc7abc5a939d3a1fdd7924fbc3ae8cf0c8bc6c0060eb7d18b020764a2064
+    name: craftycontroller
+    type: application
+    urls:
+    - https://github.com/drewburr-labs/helm-charts/releases/download/craftycontroller-0.1.0-rc1/craftycontroller-0.1.0-rc1.tgz
+    version: 0.1.0-rc1
   postgrescluster:
   - apiVersion: v2
     appVersion: 5.6.0
@@ -11,4 +23,4 @@ entries:
     urls:
     - https://github.com/drewburr-labs/helm-charts/releases/download/postgrescluster-5.6.0/postgrescluster-5.6.0.tgz
     version: 5.6.0
-generated: "2024-11-21T05:52:41.847851206Z"
+generated: "2025-02-23T18:08:21.24339542Z"
