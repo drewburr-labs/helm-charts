@@ -43,5 +43,5 @@ jobs:
           git checkout -b "postgrescluster-$CHART_VERSION"
           git add .
           git commit -m "Upgrade postgrescluster to $CHART_VERSION"
-          git push --set-upstream origin postgrescluster-5.6.0
+          git push --set-upstream origin "postgrescluster-$CHART_VERSION"
           gh pr create --fill
