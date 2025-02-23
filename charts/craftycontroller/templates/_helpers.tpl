@@ -102,8 +102,6 @@ SFTP sidecar container spec
   securityContext:
     {{- toYaml .securityContext | nindent 4 }}
   volumeMounts:
-    - name: sftp-run
-      mountPath: /var/run
     - name: sftp-host-keys
       mountPath: /etc/ssh-keys
     - name: sftp-scripts
