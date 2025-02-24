@@ -64,6 +64,8 @@ persistence:
 
 ### Enabling the SFTP server
 
+The SFTP server is provided by [atmoz/sftp](https://github.com/atmoz/sftp)
+
 Due to the limitations of Crafty Controller's file manager, an SFTP server is provided to help ease management. This container is configued to be fully compatible with Crafty Controller's permissions requirements, and will not break Crafty on its own.
 
 > Note: The Crafty Controller maintainers will state that Crafty can not support FTP. This is not true, the maintainers are choosing not to support FTP. This chart fully supports FTP, and is compatible with Crafty Controller. If you believe Crafty Controller is unhappy due to files updated using the FTP server, please open an Issue and describe the problem experienced.
@@ -73,4 +75,24 @@ sftp:
   enabled: true
   service:
     type: LoadBalancer
+```
+
+By default, two secrets are required by the FTP server to provide user credentials and SSH keys.
+
+The `sftp-users` secret's `users` key is used to define accounts for the FTP server. This value *must* be in the following format. It is critical that the UID and GID do not change:
+
+```text
+username:password:1000:0:
+```
+
+```sh
+kubectl create secret generic sftp-users --from-literal=users='username:password:1000:0:'
+```
+
+In addition, the `sftp-host-keys` secret stores the server SSH keys. The following cammands can be used to generate these keys and create the secret.
+
+```sh
+ssh-keygen -t ed25519 -f ssh_host_ed25519_key < /dev/null
+ssh-keygen -t rsa -b 4096 -f ssh_host_rsa_key < /dev/null
+kubectl create secret generic sftp-host-keys --from-file=ssh_host_ed25519_key,ssh_host_ed25519_key.pub,ssh_host_rsa_key,ssh_host_rsa_key.pub
 ```
