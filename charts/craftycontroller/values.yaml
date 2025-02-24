@@ -83,7 +83,8 @@ serviceAccount:
 
 podAnnotations: {}
 
-podSecurityContext: {}
+podSecurityContext:
+  fsGroup: 0
 
 # Using the crafty user skips permission checking during container start.
 # Running as root is not reccommended, but will trigger this process to run,
@@ -91,6 +92,7 @@ podSecurityContext: {}
 securityContext:
   runAsNonRoot: true
   runAsUser: 1000 # Built-in Crafty user
+  runAsGroup: 0 # Required for permissions
 
 services:
   https:
