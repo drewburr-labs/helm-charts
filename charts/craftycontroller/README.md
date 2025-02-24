@@ -79,14 +79,14 @@ sftp:
 
 By default, two secrets are required by the FTP server to provide user credentials and SSH keys.
 
-The `sftp-users` secret's `users` key is used to define accounts for the FTP server. This value *must* be in the following format. It is critical that the UID and GID do not change:
+The `sftp-users` secret's `users` key is used to define accounts for the FTP server. This value *must* be in the following format. It is critical that the username, UID, and GID do not change:
 
 ```text
-username:password:1000:0:
+crafty:password:1000:0:
 ```
 
 ```sh
-kubectl create secret generic sftp-users --from-literal=users='username:password:1000:0:'
+kubectl create secret generic sftp-users --from-literal=users='crafty:password:1000:0:'
 ```
 
 In addition, the `sftp-host-keys` secret stores the server SSH keys. The following cammands can be used to generate these keys and create the secret.
