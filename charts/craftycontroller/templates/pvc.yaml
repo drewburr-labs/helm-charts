@@ -1,5 +1,5 @@
 {{- range $name, $spec := .Values.persistence }}
-{{-  if and ($spec.enabled | default true) ($spec.requests) }}
+{{-  if and (ne $spec.enabled false) ($spec.requests) }}
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim

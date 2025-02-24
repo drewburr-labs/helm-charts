@@ -55,8 +55,10 @@ spec:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
             {{- range $name, $spec := .Values.persistence }}
+            {{- if ne .enabled false }}
             - name: {{ $name }}
               mountPath: {{ $spec.mountPath }}
+            {{- end }}
             {{- end }}
             {{- range .Values.additionalVolumeMounts }}
             {{ list . | toYaml | nindent 12 }}
@@ -111,7 +113,7 @@ spec:
       {{- end }}
       volumes:
         {{- range $name, $spec := .Values.persistence }}
-        {{- if $spec.enabled | default true }}
+        {{- if ne $spec.enabled false }}
         - name: {{ $name }}
           persistentVolumeClaim:
             claimName: {{ $name }}
