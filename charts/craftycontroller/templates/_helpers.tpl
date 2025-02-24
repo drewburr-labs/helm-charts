@@ -106,14 +106,12 @@ SFTP sidecar container spec
       mountPath: /etc/ssh-keys
     - name: sftp-scripts
       mountPath: /etc/sftp.d
-    - name: crafty-backups
-      mountPath: /home/crafty/backups
-    - name: crafty-logs
-      mountPath: /home/crafty/crafty-logs
-    - name: crafty-servers
-      mountPath: /home/crafty/servers
-    - name: crafty-import
-      mountPath: /home/crafty/import
+    {{- range $name, $spec := .Values.persistence }}
+    {{- if ne $spec.enabled false }}
+    - name: {{ $name }}
+      mountPath: {{ print "/home/crafty/" $spec.mountPath  }}
+    {{- end }}
+    {{- end }}
 {{- end -}}
 {{- end -}}
 {{- end -}}
