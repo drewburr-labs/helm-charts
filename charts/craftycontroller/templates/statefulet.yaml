@@ -55,7 +55,7 @@ spec:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
             {{- range $name, $spec := .Values.persistence }}
-            {{- if ne .enabled false }}
+            {{- if ne $spec.enabled false }}
             - name: {{ $name }}
               mountPath: {{ $spec.mountPath }}
             {{- end }}
