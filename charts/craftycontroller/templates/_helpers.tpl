@@ -106,7 +106,7 @@ SFTP sidecar container spec
       mountPath: /etc/ssh-keys
     - name: sftp-scripts
       mountPath: /etc/sftp.d
-    {{- range $name, $spec := .Values.persistence }}
+    {{- range $name, $spec := $.Values.persistence }}
     {{- if ne $spec.enabled false }}
     - name: {{ $name }}
       mountPath: {{ print "/home/crafty/" $spec.mountPath  }}
