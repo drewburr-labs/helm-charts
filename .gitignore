@@ -1,2 +1,5 @@
 **/template.yaml
 **/test-values.yaml
+**/ssh_host*
+**/*_key
+**/*_key.pub
