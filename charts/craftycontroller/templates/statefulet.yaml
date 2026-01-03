@@ -35,7 +35,7 @@ spec:
             {{- range $serviceName, $serviceSpec := .Values.services }}
             {{- range $portSpec := $serviceSpec.ports }}
             - name: {{ $portSpec.name }}
-              containerPort: {{ $portSpec.port }}
+              containerPort: {{ default $portSpec.port $portSpec.targetPort }}
               protocol: {{ $portSpec.protocol }}
             {{- end }}
             {{- end }}
