@@ -3,3 +3,6 @@
 # Enable automatic generation of release notes using GitHubs release notes generator.
 # see: https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes
 generate-release-notes: true
+
+# Skip chart releases that already exist
+skip-existing: true
