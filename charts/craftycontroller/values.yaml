@@ -155,7 +155,7 @@ sftp:
     # Prebaked image that ships kubectl, used to create the secret.
     kubectlImage:
       repository: rancher/kubectl
-      tag: v1.31.0
+      tag: v1.35.6
       pullPolicy: IfNotPresent
 
   resources: {}
