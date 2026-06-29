@@ -154,8 +154,8 @@ sftp:
       pullPolicy: IfNotPresent
     # Prebaked image that ships kubectl, used to create the secret.
     kubectlImage:
-      repository: bitnami/kubectl
-      tag: "1.31"
+      repository: rancher/kubectl
+      tag: v1.31.0
       pullPolicy: IfNotPresent
 
   resources: {}
