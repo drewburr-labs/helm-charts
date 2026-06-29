@@ -123,7 +123,7 @@ Volumes used by the SFTP sidecar
 {{- if .Values.sftp.enabled -}}
 - name: sftp-host-keys
   secret:
-    secretName: sftp-host-keys
+    secretName: {{ .Values.sftp.hostKeys.secretName }}
 - name: sftp-scripts
   configMap:
     name: sftp-scripts

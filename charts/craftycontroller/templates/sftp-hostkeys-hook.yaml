@@ -1,0 +1,149 @@
+{{- if and .Values.sftp.enabled .Values.sftp.hostKeys.generate }}
+{{- $secretName := .Values.sftp.hostKeys.secretName }}
+{{- $name := printf "%s-sftp-hostkeys" (include "craftycontroller.fullname" .) }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "craftycontroller.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+    argocd.argoproj.io/sync-wave: "-1"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "craftycontroller.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+    argocd.argoproj.io/sync-wave: "-1"
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "craftycontroller.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+    argocd.argoproj.io/sync-wave: "-1"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ $name }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ $name }}
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "craftycontroller.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        {{- include "craftycontroller.selectorLabels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      serviceAccountName: {{ $name }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      initContainers:
+        # Generate the host keys using the SFTP image, which already ships
+        # ssh-keygen. Keys land in an ephemeral emptyDir, never on disk.
+        - name: generate-host-keys
+          image: "{{ .Values.sftp.hostKeys.keygenImage.repository }}:{{ .Values.sftp.hostKeys.keygenImage.tag }}"
+          imagePullPolicy: {{ .Values.sftp.hostKeys.keygenImage.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          env:
+            - name: RSA_BITS
+              value: {{ .Values.sftp.hostKeys.rsaBits | quote }}
+          command:
+            - /bin/sh
+            - -e
+            - -c
+            - |
+              cd /keys
+              ssh-keygen -t ed25519 -f ssh_host_ed25519_key -N "" < /dev/null >/dev/null
+              ssh-keygen -t rsa -b "$RSA_BITS" -f ssh_host_rsa_key -N "" < /dev/null >/dev/null
+
+              # Log only fingerprints (public, non-sensitive) for auditability.
+              echo "Generated host key fingerprints:"
+              ssh-keygen -lf ssh_host_ed25519_key.pub
+              ssh-keygen -lf ssh_host_rsa_key.pub
+          volumeMounts:
+            - name: keys
+              mountPath: /keys
+      containers:
+        # Create the secret from the generated keys, only if it does not exist.
+        - name: create-secret
+          image: "{{ .Values.sftp.hostKeys.kubectlImage.repository }}:{{ .Values.sftp.hostKeys.kubectlImage.tag }}"
+          imagePullPolicy: {{ .Values.sftp.hostKeys.kubectlImage.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          env:
+            - name: SECRET_NAME
+              value: {{ $secretName | quote }}
+            - name: NAMESPACE
+              value: {{ .Release.Namespace | quote }}
+            - name: HOME
+              value: /tmp
+          command:
+            - /bin/sh
+            - -e
+            - -c
+            - |
+              if kubectl get secret "$SECRET_NAME" -n "$NAMESPACE" >/dev/null 2>&1; then
+                echo "Secret '$SECRET_NAME' already exists in namespace '$NAMESPACE'; nothing to do."
+                exit 0
+              fi
+
+              kubectl create secret generic "$SECRET_NAME" -n "$NAMESPACE" \
+                --from-file=ssh_host_ed25519_key=/keys/ssh_host_ed25519_key \
+                --from-file=ssh_host_ed25519_key.pub=/keys/ssh_host_ed25519_key.pub \
+                --from-file=ssh_host_rsa_key=/keys/ssh_host_rsa_key \
+                --from-file=ssh_host_rsa_key.pub=/keys/ssh_host_rsa_key.pub
+
+              echo "Created secret '$SECRET_NAME' in namespace '$NAMESPACE'."
+          volumeMounts:
+            - name: keys
+              mountPath: /keys
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: keys
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+{{- end }}

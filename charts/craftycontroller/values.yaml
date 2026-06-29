@@ -138,6 +138,26 @@ sftp:
       name: sftp-users
       key: users
 
+  hostKeys:
+    # Name of the secret holding the SSH host keys, mounted by the SFTP sidecar.
+    secretName: sftp-host-keys
+    # When true, a PreSync hook generates the host keys and creates the secret
+    # above if (and only if) it does not already exist. Existing secrets are
+    # never modified. Only key fingerprints are logged, never private keys.
+    generate: true
+    # RSA key size used for the generated ssh_host_rsa_key.
+    rsaBits: 4096
+    # Prebaked image that ships ssh-keygen; defaults to the SFTP image.
+    keygenImage:
+      repository: atmoz/sftp
+      tag: alpine
+      pullPolicy: IfNotPresent
+    # Prebaked image that ships kubectl, used to create the secret.
+    kubectlImage:
+      repository: bitnami/kubectl
+      tag: "1.31"
+      pullPolicy: IfNotPresent
+
   resources: {}
   securityContext: {}
 

@@ -89,7 +89,17 @@ crafty:password:1000:0:
 kubectl create secret generic sftp-users --from-literal=users='crafty:password:1000:0:'
 ```
 
-In addition, the `sftp-host-keys` secret stores the server SSH keys. The following cammands can be used to generate these keys and create the secret.
+In addition, the `sftp-host-keys` secret stores the server SSH keys.
+
+By default (`sftp.hostKeys.generate: true`), a PreSync hook job generates these
+keys and creates the secret automatically **if and only if it does not already
+exist**. An existing secret is never modified, so host keys remain stable across
+upgrades. For auditability the job logs only the public key fingerprints — the
+private keys are never written to logs. The job runs as a Helm/Argo CD PreSync
+hook with a namespaced Role that can only `get` and `create` secrets.
+
+To manage the keys yourself instead, set `sftp.hostKeys.generate: false` and
+create the secret manually:
 
 ```sh
 ssh-keygen -t ed25519 -f ssh_host_ed25519_key < /dev/null
