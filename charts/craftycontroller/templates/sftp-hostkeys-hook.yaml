@@ -67,10 +67,14 @@ spec:
       restartPolicy: Never
       serviceAccountName: {{ $name }}
       securityContext:
+        # uid/gid 65534 (nobody) exists in /etc/passwd in the alpine-based
+        # keygen image, which ssh-keygen requires (it calls getpwuid). Both
+        # containers share the uid so the kubectl container can read the
+        # 0600 private keys written to the shared volume.
         runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 1000
-        fsGroup: 1000
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
       initContainers:
         # Generate the host keys using the SFTP image, which already ships
         # ssh-keygen. Keys land in an ephemeral emptyDir, never on disk.
