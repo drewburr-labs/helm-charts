@@ -1,6 +1,8 @@
-{{- if and .Values.sftp.enabled .Values.sftp.hostKeys.generate }}
-{{- $secretName := .Values.sftp.hostKeys.secretName }}
-{{- $name := printf "%s-sftp-hostkeys" (include "craftycontroller.fullname" .) }}
+{{- if and .Values.sftp.enabled (or .Values.sftp.hostKeys.generate .Values.sftp.users.generate) }}
+{{- $hostKeysSecret := .Values.sftp.hostKeys.secretName }}
+{{- $usersSecret := .Values.sftp.users.secretKeyRef.name }}
+{{- $usersKey := .Values.sftp.users.secretKeyRef.key }}
+{{- $name := printf "%s-sftp-secrets" (include "craftycontroller.fullname" .) }}
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -70,15 +72,15 @@ spec:
         # uid/gid 65534 (nobody) exists in /etc/passwd in the alpine-based
         # keygen image, which ssh-keygen requires (it calls getpwuid). Both
         # containers share the uid so the kubectl container can read the
-        # 0600 private keys written to the shared volume.
+        # 0600 secret material written to the shared volume.
         runAsNonRoot: true
         runAsUser: 65534
         runAsGroup: 65534
         fsGroup: 65534
       initContainers:
-        # Generate the host keys using the SFTP image, which already ships
-        # ssh-keygen. Keys land in an ephemeral emptyDir, never on disk.
-        - name: generate-host-keys
+        # Generate secret material into an ephemeral emptyDir. Nothing
+        # sensitive is ever written to disk or logs.
+        - name: generate
           image: "{{ .Values.sftp.hostKeys.keygenImage.repository }}:{{ .Values.sftp.hostKeys.keygenImage.tag }}"
           imagePullPolicy: {{ .Values.sftp.hostKeys.keygenImage.pullPolicy }}
           securityContext:
@@ -89,12 +91,21 @@ spec:
           env:
             - name: RSA_BITS
               value: {{ .Values.sftp.hostKeys.rsaBits | quote }}
+            - name: SFTP_USERNAME
+              value: {{ .Values.sftp.users.username | quote }}
+            - name: SFTP_UID
+              value: {{ .Values.sftp.users.uid | quote }}
+            - name: SFTP_GID
+              value: {{ .Values.sftp.users.gid | quote }}
+            - name: PW_LENGTH
+              value: {{ .Values.sftp.users.passwordLength | quote }}
           command:
             - /bin/sh
             - -e
             - -c
             - |
-              cd /keys
+              cd /work
+              {{- if .Values.sftp.hostKeys.generate }}
               ssh-keygen -t ed25519 -f ssh_host_ed25519_key -N "" < /dev/null >/dev/null
               ssh-keygen -t rsa -b "$RSA_BITS" -f ssh_host_rsa_key -N "" < /dev/null >/dev/null
 
@@ -102,12 +113,32 @@ spec:
               echo "Generated host key fingerprints:"
               ssh-keygen -lf ssh_host_ed25519_key.pub
               ssh-keygen -lf ssh_host_rsa_key.pub
+              {{- end }}
+              {{- if .Values.sftp.users.generate }}
+
+              # Random password: encode-safe charset (no ':' delimiter, no
+              # shell/URL-hostile chars), required to contain an uppercase,
+              # lowercase, digit and special character.
+              charset='A-Za-z0-9_.~!@#+=-'
+              while :; do
+                pw="$(tr -dc "$charset" < /dev/urandom | head -c "$PW_LENGTH")"
+                printf '%s' "$pw" | grep -q '[A-Z]'        || continue
+                printf '%s' "$pw" | grep -q '[a-z]'        || continue
+                printf '%s' "$pw" | grep -q '[0-9]'        || continue
+                printf '%s' "$pw" | grep -q '[^A-Za-z0-9]' || continue
+                break
+              done
+              # Written as the full atmoz users line; password never logged.
+              printf '%s:%s:%s:%s:' "$SFTP_USERNAME" "$pw" "$SFTP_UID" "$SFTP_GID" > users
+              echo "Generated SFTP credentials for user '$SFTP_USERNAME' (password redacted)."
+              {{- end }}
           volumeMounts:
-            - name: keys
-              mountPath: /keys
+            - name: work
+              mountPath: /work
       containers:
-        # Create the secret from the generated keys, only if it does not exist.
-        - name: create-secret
+        # Create each secret from the generated material, only if it does
+        # not already exist. Existing secrets are never modified.
+        - name: create-secrets
           image: "{{ .Values.sftp.hostKeys.kubectlImage.repository }}:{{ .Values.sftp.hostKeys.kubectlImage.tag }}"
           imagePullPolicy: {{ .Values.sftp.hostKeys.kubectlImage.pullPolicy }}
           securityContext:
@@ -116,10 +147,14 @@ spec:
             capabilities:
               drop: ["ALL"]
           env:
-            - name: SECRET_NAME
-              value: {{ $secretName | quote }}
             - name: NAMESPACE
               value: {{ .Release.Namespace | quote }}
+            - name: HOST_KEYS_SECRET
+              value: {{ $hostKeysSecret | quote }}
+            - name: USERS_SECRET
+              value: {{ $usersSecret | quote }}
+            - name: USERS_KEY
+              value: {{ $usersKey | quote }}
             - name: HOME
               value: /tmp
           command:
@@ -127,26 +162,36 @@ spec:
             - -e
             - -c
             - |
-              if kubectl get secret "$SECRET_NAME" -n "$NAMESPACE" >/dev/null 2>&1; then
-                echo "Secret '$SECRET_NAME' already exists in namespace '$NAMESPACE'; nothing to do."
-                exit 0
+              {{- if .Values.sftp.hostKeys.generate }}
+              if kubectl get secret "$HOST_KEYS_SECRET" -n "$NAMESPACE" >/dev/null 2>&1; then
+                echo "Secret '$HOST_KEYS_SECRET' already exists; nothing to do."
+              else
+                kubectl create secret generic "$HOST_KEYS_SECRET" -n "$NAMESPACE" \
+                  --from-file=ssh_host_ed25519_key=/work/ssh_host_ed25519_key \
+                  --from-file=ssh_host_ed25519_key.pub=/work/ssh_host_ed25519_key.pub \
+                  --from-file=ssh_host_rsa_key=/work/ssh_host_rsa_key \
+                  --from-file=ssh_host_rsa_key.pub=/work/ssh_host_rsa_key.pub
+                echo "Created secret '$HOST_KEYS_SECRET'."
               fi
-
-              kubectl create secret generic "$SECRET_NAME" -n "$NAMESPACE" \
-                --from-file=ssh_host_ed25519_key=/keys/ssh_host_ed25519_key \
-                --from-file=ssh_host_ed25519_key.pub=/keys/ssh_host_ed25519_key.pub \
-                --from-file=ssh_host_rsa_key=/keys/ssh_host_rsa_key \
-                --from-file=ssh_host_rsa_key.pub=/keys/ssh_host_rsa_key.pub
-
-              echo "Created secret '$SECRET_NAME' in namespace '$NAMESPACE'."
+              {{- end }}
+              {{- if .Values.sftp.users.generate }}
+              if kubectl get secret "$USERS_SECRET" -n "$NAMESPACE" >/dev/null 2>&1; then
+                echo "Secret '$USERS_SECRET' already exists; nothing to do."
+              else
+                # --from-file keeps the password out of argv and logs.
+                kubectl create secret generic "$USERS_SECRET" -n "$NAMESPACE" \
+                  --from-file="$USERS_KEY"=/work/users
+                echo "Created secret '$USERS_SECRET'."
+              fi
+              {{- end }}
           volumeMounts:
-            - name: keys
-              mountPath: /keys
+            - name: work
+              mountPath: /work
               readOnly: true
             - name: tmp
               mountPath: /tmp
       volumes:
-        - name: keys
+        - name: work
           emptyDir: {}
         - name: tmp
           emptyDir: {}

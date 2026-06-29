@@ -85,6 +85,18 @@ The `sftp-users` secret's `users` key is used to define accounts for the FTP ser
 crafty:password:1000:0:
 ```
 
+By default (`sftp.users.generate: true`), the same PreSync hook creates this
+secret **if and only if it does not already exist**, generating a random 20
+character password (configurable via `sftp.users.passwordLength`, `username`,
+`uid`, `gid`). The password is never logged. To retrieve it after creation:
+
+```sh
+kubectl get secret sftp-users -o jsonpath='{.data.users}' | base64 -d
+```
+
+To manage it yourself instead, set `sftp.users.generate: false` and create the
+secret manually:
+
 ```sh
 kubectl create secret generic sftp-users --from-literal=users='crafty:password:1000:0:'
 ```

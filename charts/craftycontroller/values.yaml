@@ -137,6 +137,14 @@ sftp:
     secretKeyRef:
       name: sftp-users
       key: users
+    # When true, a PreSync hook creates the users secret with a randomly
+    # generated password if (and only if) it does not already exist. An
+    # existing secret is never modified, and the password is never logged.
+    generate: true
+    username: crafty
+    uid: 1000
+    gid: 0
+    passwordLength: 20
 
   hostKeys:
     # Name of the secret holding the SSH host keys, mounted by the SFTP sidecar.
